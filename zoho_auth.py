@@ -11,18 +11,18 @@ REFRESH_TOKEN = os.getenv("ZOHO_REFRESH_TOKEN")
 TOKEN_URL = "https://accounts.zoho.in/oauth/v2/token"
 
 def read_tokens():
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "r") as file:
-            return json.load(file)
-    return {}
+    """Read access token from environment variables"""
+    tokens_json = os.getenv("ZOHO_TOKENS", "{}")  # Read from env
+    return json.loads(tokens_json)
 
 def write_tokens(data):
-    with open(TOKEN_FILE, "w") as file:
-        json.dump(data, file)
+    """Print token update instructions (since we can't write to file)"""
+    print("\n🔹 UPDATE your Render environment variable 'ZOHO_TOKENS' with:")
+    print(json.dumps(data, indent=4))
 
 def get_access_token():
     tokens = read_tokens()
-    
+
     if tokens.get("access_token") and time.time() < tokens.get("expires_at", 0):
         return tokens["access_token"]
 
@@ -38,10 +38,9 @@ def get_access_token():
 
     if response.status_code == 200:
         new_tokens = response.json()
-        # print(new_tokens)
-        new_tokens["expires_at"] = time.time() + new_tokens["expires_in"] - 60  
-        
-        write_tokens(new_tokens)
+        new_tokens["expires_at"] = time.time() + new_tokens["expires_in"] - 60
+
+        write_tokens(new_tokens)  # Log updated tokens
         return new_tokens["access_token"]
-    
-    raise Exception(f"Failed to refresh access token: {response.text}")
+
+    raise Exception(f"❌ Failed to refresh access token: {response.text}")
